@@ -10,13 +10,6 @@ public class Tile {
         value = num;
     }
     //------------------------------------------
-    public int getGridX() {
-        return gridX;
-    }
-
-    public int getGridY() {
-        return gridY;
-    }
 
     public int getValue() {
         return value;
@@ -27,12 +20,20 @@ public class Tile {
         value = num;
     }
 
+    public void setGridX(int x) {
+        gridX = x;
+    }
+
+    public void setGridY(int y) {
+        gridY = y;
+    }
+
     //------------------------------------------
     public boolean canMerge(Tile otherTile){
         return value == otherTile.getValue();
     }
 
-    public int merge(Tile otherTile){
+    public int mergeWith(Tile otherTile){
         if (canMerge(otherTile)){
             value *= 2;
             return value;
