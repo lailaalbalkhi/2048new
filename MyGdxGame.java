@@ -20,6 +20,7 @@ public class MyGdxGame extends ApplicationAdapter {
 	BitmapFont textfont;
 	SpriteBatch batch;
 	Texture grid, two, four, eight, sixteen, thirtyTwo, sixtyFour, oneTwentyEight, twoFiftySix, fiveTwelve, tenTwentyFour, twentyFourtyEight;
+	float tileSpeed = 10.0f;
 
 	@Override
 	public void create() {
@@ -44,15 +45,31 @@ public class MyGdxGame extends ApplicationAdapter {
 			}
 		}
 		startGame();
+
 	}
 
 	@Override
 	public void render() {
 		Gdx.gl.glClearColor(0.8f, 0.8f, 0.8f, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+		if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+			moveUp();
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+			System.out.println("down");
+			moveDown();
+			//render();
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
+			moveLeft();
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
+			moveRight();
+		}
+
 		batch.begin();
 		batch.draw(grid,100,50);
-
 		font = new BitmapFont(Gdx.files.internal("2048font.fnt"));
 		textfont = new BitmapFont(Gdx.files.internal("textfont.fnt"));
 
@@ -96,6 +113,7 @@ public class MyGdxGame extends ApplicationAdapter {
 				}
 			}
 		}
+
 		font.draw(batch,"2048", 100, 675);
 		textfont.draw(batch, "Join the numbers and get to the 2048 tile!", 100, 600);
 		batch.end();
@@ -143,29 +161,6 @@ public class MyGdxGame extends ApplicationAdapter {
 		}
 	}
 
-	public void game(){
-
-		while (checkMoves()) {
-
-			if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-				moveUp();
-			}
-			if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
-				System.out.println("down");
-				moveDown();
-			}
-			if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
-				moveLeft();
-			}
-			if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
-				moveRight();
-			}
-			if (checkMoves() == false){
-				break;
-			}
-
-		}
-	}
 
 	public void moveUp(){
 		rotate();
@@ -177,6 +172,7 @@ public class MyGdxGame extends ApplicationAdapter {
 
 	public void moveDown(){
 		moveTile();
+		//render();
 	}
 
 	public void moveRight(){
@@ -219,11 +215,18 @@ public class MyGdxGame extends ApplicationAdapter {
 							board[nextRow][nextCol].setValue(currentTile.getValue()); //tile being changed has its value changed
 							board[row][col].setValue(0); //previous tile is set to 0
 
+
 							row = nextRow;
 							col = nextCol;
-							nextRow += xIncrease; //next row is increased by 1 every time
-							nextCol += yIncrease;
-							turn = true; //turn has been completed so boolean is set to true
+							if (nextRow+xIncrease<3) {
+								nextRow += xIncrease; //next row is increased by 1 every time
+								turn = true;
+							}
+							if (nextCol+yIncrease<3) {
+								nextCol += yIncrease;
+								turn = true; //turn has been completed so boolean is set to true
+							}
+
 
 						}
 						else if (nextTile.canMerge(currentTile)) { //checks the other case where the next tile is able to merge with the current one
@@ -282,7 +285,7 @@ public class MyGdxGame extends ApplicationAdapter {
 			}
 		}
 
-		if (vertical == true || horizontal == true || vertical == true && horizontal == true){
+		if (vertical == true || horizontal == true || vertical == true && horizontal == true){ //why is it checking so many cases
 			return true;
 		}
 
