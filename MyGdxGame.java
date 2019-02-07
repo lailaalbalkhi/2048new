@@ -20,7 +20,6 @@ public class MyGdxGame extends ApplicationAdapter {
 	BitmapFont textfont;
 	SpriteBatch batch;
 	Texture grid, two, four, eight, sixteen, thirtyTwo, sixtyFour, oneTwentyEight, twoFiftySix, fiveTwelve, tenTwentyFour, twentyFourtyEight;
-	float tileSpeed = 10.0f;
 
 	@Override
 	public void create() {
@@ -45,31 +44,15 @@ public class MyGdxGame extends ApplicationAdapter {
 			}
 		}
 		startGame();
-
 	}
 
 	@Override
 	public void render() {
 		Gdx.gl.glClearColor(0.8f, 0.8f, 0.8f, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-		if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-			moveUp();
-		}
-		if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
-			System.out.println("down");
-			moveDown();
-			//render();
-		}
-		if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
-			moveLeft();
-		}
-		if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
-			moveRight();
-		}
-
 		batch.begin();
 		batch.draw(grid,100,50);
+
 		font = new BitmapFont(Gdx.files.internal("2048font.fnt"));
 		textfont = new BitmapFont(Gdx.files.internal("textfont.fnt"));
 
@@ -113,10 +96,41 @@ public class MyGdxGame extends ApplicationAdapter {
 				}
 			}
 		}
-
 		font.draw(batch,"2048", 100, 675);
 		textfont.draw(batch, "Join the numbers and get to the 2048 tile!", 100, 600);
+
+
+		if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+			System.out.println("up");
+			printBoard();
+			moveUp();
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+			System.out.println("down");
+			printBoard();
+			moveDown();
+
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
+			System.out.println("left");
+			printBoard();
+			moveLeft();
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
+			System.out.println("right");
+			printBoard();
+			moveRight();
+		}
+
 		batch.end();
+	}
+
+	public void printBoard(){
+		for (int i = 0; i < SIDE; i++){
+			for (int j = 0; j < SIDE; j++){
+				System.out.println(board[i][j].getValue());
+			}
+		}
 	}
 
 	@Override
@@ -150,7 +164,7 @@ public class MyGdxGame extends ApplicationAdapter {
 		board[availablePoints.get(index)[0]][availablePoints.get(index)[1]] = new Tile(availablePoints.get(index)[0], availablePoints.get(index)[1],randomValue());
 	}
 
-	public int randomValue(){
+	public int randomValue() {
 		//generates a new random (2 or 4)
 		int chance = (int) (Math.random() * 5);
 		if (chance == 4) {
@@ -160,7 +174,6 @@ public class MyGdxGame extends ApplicationAdapter {
 			return 2;
 		}
 	}
-
 
 	public void moveUp(){
 		rotate();
@@ -172,7 +185,6 @@ public class MyGdxGame extends ApplicationAdapter {
 
 	public void moveDown(){
 		moveTile();
-		//render();
 	}
 
 	public void moveRight(){
@@ -195,15 +207,14 @@ public class MyGdxGame extends ApplicationAdapter {
 
 		boolean turn = false; //used to check if a move was made or not (therefore generating a new tile)
 		int xIncrease = 1;
-		int yIncrease = 0;
 
-		for (int row = 0; row < SIDE - 1; row++) {
+		for (int row = 0; row < SIDE; row++) {
 			for (int col = 0; col < SIDE; col++) {
 
 				if (board[row][col].getValue() == 0) { //
 
 					int nextRow = row + xIncrease;
-					int nextCol = col + yIncrease;
+					int nextCol = col;
 
 					while (nextRow >= 0 && nextRow <= SIDE && nextCol >= 0 && nextCol <= SIDE) {
 
@@ -215,19 +226,13 @@ public class MyGdxGame extends ApplicationAdapter {
 							board[nextRow][nextCol].setValue(currentTile.getValue()); //tile being changed has its value changed
 							board[row][col].setValue(0); //previous tile is set to 0
 
-
 							row = nextRow;
-							col = nextCol;
+
 							if (nextRow+xIncrease<3) {
 								nextRow += xIncrease; //next row is increased by 1 every time
 								turn = true;
+								break;
 							}
-							if (nextCol+yIncrease<3) {
-								nextCol += yIncrease;
-								turn = true; //turn has been completed so boolean is set to true
-							}
-
-
 						}
 						else if (nextTile.canMerge(currentTile)) { //checks the other case where the next tile is able to merge with the current one
 
@@ -267,6 +272,7 @@ public class MyGdxGame extends ApplicationAdapter {
 
 		boolean horizontal = false;
 		boolean vertical = false;
+		boolean empty = false;
 
 		for (int i = 0; i < SIDE; i++){ //checks if any moves moving left/right are possiblefor (int j = 0; j < SIDE - 1; j++){
 			for (int j = 0; j < SIDE - 1; j++){
@@ -285,7 +291,15 @@ public class MyGdxGame extends ApplicationAdapter {
 			}
 		}
 
-		if (vertical == true || horizontal == true || vertical == true && horizontal == true){ //why is it checking so many cases
+		for (int i = 0; i < SIDE; i++){
+			for (int j = 0; j < SIDE; j++){
+				if (board[i][j].getValue() == 0){
+					empty = true;
+				}
+			}
+		}
+
+		if (vertical == true || horizontal == true || empty == true){
 			return true;
 		}
 
@@ -296,11 +310,18 @@ public class MyGdxGame extends ApplicationAdapter {
 	}
 
 	public void rotate(){
+
+		Tile[][] rotated = new Tile[SIDE][SIDE];
+
 		for (int i = 0; i < SIDE; i++){
 			for (int j = 0; j < SIDE; j++){
-				//board[i][j].setGridX(board[i][j].getGridY());
-				//board[i][j].setGridY(Math.abs(board[i][j].getGridX() - 3));
-				board[(SIDE-1)-j][i] = board[i][j];
+				rotated[(SIDE - 1) - j][i] = board[i][j];
+			}
+		}
+
+		for (int i = 0; i < SIDE; i++){
+			for (int j = 0; j < SIDE; j++){
+				board[i][j] = rotated[i][j];
 			}
 		}
 	}
