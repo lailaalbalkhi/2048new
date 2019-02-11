@@ -15,11 +15,11 @@ public class MyGdxGame extends ApplicationAdapter {
 	private static final int SIDE = 4;
 	private static Tile[][] board = new Tile[SIDE][SIDE];
 	private static int score = 0; //used to keep track of the points the user has accumulated
+	private boolean canMove = true;
 
-	BitmapFont font;
-	BitmapFont textfont;
+	BitmapFont font, textFont, scoreFont;
 	SpriteBatch batch;
-	Texture grid, two, four, eight, sixteen, thirtyTwo, sixtyFour, oneTwentyEight, twoFiftySix, fiveTwelve, tenTwentyFour, twentyFourtyEight;
+	Texture grid, two, four, eight, sixteen, thirtyTwo, sixtyFour, oneTwentyEight, twoFiftySix, fiveTwelve, tenTwentyFour, twentyFourtyEight, newGameButton, scoreDisplay, gameOver;
 
 	@Override
 	public void create() {
@@ -36,14 +36,17 @@ public class MyGdxGame extends ApplicationAdapter {
 		fiveTwelve = new Texture("512.png");
 		tenTwentyFour = new Texture("1024.png");
 		twentyFourtyEight = new Texture("2048.png");
+		newGameButton = new Texture("newGameButton.png");
+		scoreDisplay = new Texture("scoreDisplay.png");
+		gameOver = new Texture("gameOver.png");
 
 		for (int i = 0; i < SIDE; i++){
 			for (int j = 0; j < SIDE; j++) {
-				board[i][j] = new Tile(i,j,0);
+				board[i][j] = new Tile(0); //renders the board
 
 			}
 		}
-		startGame();
+		startGame(); //makes a random pair of tiles
 	}
 
 	@Override
@@ -52,9 +55,12 @@ public class MyGdxGame extends ApplicationAdapter {
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		batch.begin();
 		batch.draw(grid,100,50);
+		batch.draw(newGameButton, 475, 625);
+		batch.draw(scoreDisplay, 400, 625);
 
 		font = new BitmapFont(Gdx.files.internal("2048font.fnt"));
-		textfont = new BitmapFont(Gdx.files.internal("textfont.fnt"));
+		textFont = new BitmapFont(Gdx.files.internal("textfont.fnt"));
+		scoreFont = new BitmapFont(Gdx.files.internal("score.fnt"));
 
 		for (int i = 0; i < SIDE; i++) {
 			for (int j = 0; j < SIDE; j++) {
@@ -96,9 +102,48 @@ public class MyGdxGame extends ApplicationAdapter {
 				}
 			}
 		}
-		font.draw(batch,"2048", 100, 675);
-		textfont.draw(batch, "Join the numbers and get to the 2048 tile!", 100, 600);
+		font.draw(batch, "2048", 100, 675);
+		textFont.draw(batch, "Join the numbers and get to the 2048 tile!", 100, 600);
+		Integer scoreText = new Integer(score);
+		scoreFont.draw(batch, scoreText.toString(), 400, 650);
+
+
+		if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+			System.out.println("up");
+			moveUp();
+			printBoard();
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+			System.out.println("down");
+			moveDown();
+			printBoard();
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
+			System.out.println("left");
+			moveLeft();
+			printBoard();
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
+			System.out.println("right");
+			moveRight();
+			printBoard();
+		}
+		if (Gdx.input.getX() >= 425 && Gdx.input.getX() <= 600 && Gdx.input.getY() >= 35 && Gdx.input.getY() <= 70 && Gdx.input.isTouched()) { //if the button gets pressed
+			batch.draw(grid, 100, 50); //clear the grid by redrawing it again
+			newGame(); //generate tiles like a new game
+		}
+		if (!checkMoves()) { //if there are no more moves to be made
+			batch.draw(gameOver, 100, 50);
+		}
 		batch.end();
+	}
+
+	public void printBoard(){
+		for (int i = 0; i < SIDE; i++){
+			for (int j = 0; j < SIDE; j++){
+				System.out.print(board[i][j].getValue() + " ");
+			}
+		}
 	}
 
 	@Override
@@ -111,9 +156,24 @@ public class MyGdxGame extends ApplicationAdapter {
 		super.resize(width, height);
 	}
 
+	//-----------------------------------------------------------------------------------------------------------------
+
+	//Methods that are used at the start of the game to get everything started
+
 	public void startGame(){ // generates 2 random tiles to start the game
 		generateTile();
 		generateTile();
+	}
+
+	public void newGame() { //used when the new game button is pressed; resets the board and resets the score
+		canMove = true;
+		score = 0;
+		for (int i = 0; i < SIDE; i++) {
+			for (int j = 0; j < SIDE; j++) {
+				board[i][j].setValue(0);
+			}
+		}
+		startGame(); //generates the 2 new random tiles
 	}
 
 	public void generateTile() {
@@ -124,15 +184,15 @@ public class MyGdxGame extends ApplicationAdapter {
 			for (int j = 0; j < SIDE; j++) {
 				if (board[i][j].getValue() == 0) {
 					Integer[] point = {i, j}; //
-					availablePoints.add(point); //if a Tile has a value of 0, then it is added into the arrayList
+					availablePoints.add(point); //if a point on the board has a value of 0, then it is added into the arrayList
 				}
 			}
 		}
 		int index = (int) (Math.random() * availablePoints.size()); //chooses a random one of these points
-		board[availablePoints.get(index)[0]][availablePoints.get(index)[1]] = new Tile(availablePoints.get(index)[0], availablePoints.get(index)[1],randomValue());
+		board[availablePoints.get(index)[0]][availablePoints.get(index)[1]] = new Tile(randomValue());
 	}
 
-	public int randomValue(){
+	public int randomValue() {
 		//generates a new random (2 or 4)
 		int chance = (int) (Math.random() * 5);
 		if (chance == 4) {
@@ -143,136 +203,231 @@ public class MyGdxGame extends ApplicationAdapter {
 		}
 	}
 
-	public void game(){
+	//-----------------------------------------------------------------------------------------------------------------
 
-		while (checkMoves()) {
-
-			if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-				moveUp();
-			}
-			if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
-				System.out.println("down");
-				moveDown();
-			}
-			if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
-				moveLeft();
-			}
-			if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
-				moveRight();
-			}
-			if (checkMoves() == false){
-				break;
-			}
-
-		}
-	}
+	//Call the 4 moving methods and also generate a new random tile
 
 	public void moveUp(){
-		rotate();
-		rotate();
-		moveTile();
-		rotate();
-		rotate();
+		moveTilesUp();
+		generateTile();
 	}
 
 	public void moveDown(){
-		moveTile();
+		moveTilesDown();
+		generateTile();
 	}
 
 	public void moveRight(){
-		rotate();
-		rotate();
-		rotate();
-		moveTile();
-		rotate();
+		moveTilesRight();
+		generateTile();
 	}
 
 	public void moveLeft(){
-		rotate();
-		moveTile();
-		rotate();
-		rotate();
-		rotate();
+		moveTilesLeft();
+		generateTile();
 	}
 
-	public boolean moveTile(){
+	//-----------------------------------------------------------------------------------------------------------------
 
-		boolean turn = false; //used to check if a move was made or not (therefore generating a new tile)
-		int xIncrease = 1;
-		int yIncrease = 0;
+	//Tne 4 methods that allow the tiles to move
 
-		for (int row = 0; row < SIDE - 1; row++) {
-			for (int col = 0; col < SIDE; col++) {
+	public void moveTilesDown(){
 
-				if (board[row][col].getValue() == 0) { //
-
-					int nextRow = row + xIncrease;
-					int nextCol = col + yIncrease;
-
-					while (nextRow >= 0 && nextRow <= SIDE && nextCol >= 0 && nextCol <= SIDE) {
-
-						Tile currentTile = board[row][col];
-						Tile nextTile = board[nextRow][nextCol];
-
-						if (nextTile.getValue() == 0) { //checks the case where the next tile is 0
-
-							board[nextRow][nextCol].setValue(currentTile.getValue()); //tile being changed has its value changed
-							board[row][col].setValue(0); //previous tile is set to 0
-
-							row = nextRow;
-							col = nextCol;
-							nextRow += xIncrease; //next row is increased by 1 every time
-							nextCol += yIncrease;
-							turn = true; //turn has been completed so boolean is set to true
-
-						}
-						else if (nextTile.canMerge(currentTile)) { //checks the other case where the next tile is able to merge with the current one
-
-							int value = nextTile.getValue() * 2;
-
-							nextTile.setValue(value); //the next tile has it's value multiplied by 2 and then set to that amount
-							nextTile.setMerged();
-							score += value; //current score is added to total score
-							board[row][col].setValue(0); //previous tile is set to a value of 0
-							turn = true; //turn has been completed so boolean is set to true
-							break;
-
-						}
-						else {
-							break;
-						}
+		for (int col = 0; col < SIDE; col++){
+			int movingCount = 0; //moving is used to move the tiles as far up as they possibly can
+			for (int row = 0; row < SIDE; row++){
+				if (board[row][col].getValue() != 0){ //checks if the tile is not empty (so it can be moved up)
+					board[movingCount][col].setValue(board[row][col].getValue()); //tile is moved up
+					if (movingCount != row){
+						board[row][col].setValue(0); //previous tiles are set to 0
 					}
+					movingCount++; //counter is increased to go up the columns each time
 				}
 			}
 		}
 
-		if (turn) { //if a turn is completed, all tiles are unmerged
-
-			for (int i = 0; i < SIDE; i++) {
-				for (int j = 0; j < SIDE; j++) {
-					board[i][j].unMerge(); //once the turn is complete, the tiles must be reset to unmerged
+		//after the tiles are moved as far up as possible, it is checked to see if they are able to merge
+		for (int col = 0; col < SIDE; col++){
+			for (int row = 0; row < SIDE - 1; row++){
+				if (board[row][col].canMerge(board[row + 1][col])){ //checks if the 
+					int value = board[row][col].getValue() * 2;
+					board[row][col].setValue(value);
+					board[row][col].setMerged();
+					board[row + 1][col].setValue(0);
+					score += value;
 				}
 			}
 		}
 
-		generateTile(); //after a turn is completed, a new random tile is generated
-		return turn;
+		//after the moving up and the merging occurs, the tiles are pushed up as far as possible once again
+		for (int col = 0; col < SIDE; col++){
+			int movingCount = 0;
+			for (int row = 0; row < SIDE; row++){
+				if (board[row][col].getValue() != 0){
+					board[movingCount][col].setValue(board[row][col].getValue());
+					if (movingCount != row){
+						board[row][col].setValue(0);
+					}
+					movingCount++;
+				}
+			}
+		}
 
+		unMergeBoard();
 	}
 
-	public boolean checkMoves(){
+	public void moveTilesLeft(){
+
+		for (int row = 0; row < SIDE; row++){
+			int movingCount = 0;
+			for (int col = 0; col < SIDE; col++){
+				if (board[row][col].getValue() != 0){
+					board[row][movingCount].setValue(board[row][col].getValue());
+					if (movingCount != col){
+						board[row][col].setValue(0);
+					}
+					movingCount++;
+				}
+			}
+		}
+
+		for (int row = 0; row < SIDE; row++){
+			for (int col = 0; col < SIDE - 1; col++){
+				if (board[row][col].canMerge(board[row][col + 1])){
+					int value = board[row][col].getValue() * 2;
+					board[row][col].setValue(value);
+					board[row][col].setMerged();
+					board[row][col + 1].setValue(0);
+					score += value;
+				}
+			}
+		}
+
+		for (int row = 0; row < SIDE; row++) {
+			int movingCount = 0;
+			for (int col = 0; col < SIDE; col++) {
+				if (board[row][col].getValue() != 0) {
+					board[row][movingCount].setValue(board[row][col].getValue());
+					if (movingCount != col) {
+						board[row][col].setValue(0);
+					}
+					movingCount++;
+				}
+			}
+		}
+
+		unMergeBoard();
+	}
+
+	public void moveTilesUp(){
+
+		for (int col = 0; col < SIDE; col++){
+			int movingCount = 0;
+			for (int row = SIDE - 1; row >= 0; row--){
+				if (board[row][col].getValue() != 0){
+					board[SIDE - 1 - movingCount][col].setValue(board[row][col].getValue());
+					if (SIDE - 1 - movingCount != row){
+						board[row][col].setValue(0);
+					}
+					movingCount++;
+				}
+			}
+		}
+
+		for (int col = 0; col < SIDE; col++){
+			for (int row = SIDE - 1; row > 0; row--){
+				if (board[row][col].canMerge(board[row - 1][col])){
+					int value = board[row][col].getValue() * 2;
+					board[row][col].setValue(value);
+					board[row][col].setMerged();
+					board[row - 1][col].setValue(0);
+					score += value;
+				}
+			}
+		}
+
+		for (int col = 0; col < SIDE; col++){
+			int movingCount = 0;
+			for (int row = SIDE - 1; row >= 0; row--){
+				if (board[row][col].getValue() != 0){
+					board[SIDE - 1 - movingCount][col].setValue(board[row][col].getValue());
+					if (SIDE - 1 - movingCount != row){
+						board[row][col].setValue(0);
+					}
+					movingCount++;
+				}
+			}
+		}
+
+		unMergeBoard();
+	}
+
+	public void moveTilesRight(){
+
+		for (int row = 0; row < SIDE; row++){
+			int movingCount = 0;
+			for (int col = SIDE - 1; col >= 0; col--){
+				if (board[row][col].getValue() != 0){
+					board[row][SIDE - 1 - movingCount].setValue(board[row][col].getValue());
+					if (SIDE - 1 - movingCount != col){
+						board[row][col].setValue(0);
+					}
+					movingCount++;
+				}
+			}
+		}
+
+		for (int row = 0; row < SIDE; row++){
+			for (int col = SIDE - 1; col > 0; col--){
+				if (board[row][col].canMerge(board[row][col - 1])){
+					int value = board[row][col - 1].getValue() * 2;
+					board[row][col].setValue(value);
+					board[row][col].setMerged();
+					board[row][col - 1].setValue(0);
+					score += value;
+				}
+			}
+		}
+
+		for (int row = 0; row < SIDE; row++){
+			int movingCount = 0;
+			for (int col = SIDE - 1; col >= 0; col--){
+				if (board[row][col].getValue() != 0){
+					board[row][SIDE - 1 - movingCount].setValue(board[row][col].getValue());
+					if (SIDE - 1 - movingCount != col){
+						board[row][col].setValue(0);
+					}
+					movingCount++;
+				}
+			}
+		}
+
+		unMergeBoard();
+	}
+
+	//-----------------------------------------------------------------------------------------------------------------
+
+	public void unMergeBoard(){ //used at the end of turns to go through and make sure the tiles are umerged
+		for (int i = 0; i < SIDE; i++){
+			for (int j = 0; j < SIDE; j++){
+				board[i][j].unMerge();
+			}
+		}
+	}
+
+	public boolean checkMoves(){ //used to check if moves can be made
 
 		boolean horizontal = false;
 		boolean vertical = false;
+		boolean empty = false;
 
-		for (int i = 0; i < SIDE; i++){ //checks if any moves moving left/right are possiblefor (int j = 0; j < SIDE - 1; j++){
-			for (int j = 0; j < SIDE - 1; j++){
-				if (board[i][j].getValue() == board[i][j + 1].getValue()){
+		for (int i = 0; i < SIDE; i++) { //checks if any moves moving left/right are possible
+			for (int j = 0; j < SIDE - 1; j++) {
+				if (board[i][j].getValue() == board[i][j + 1].getValue()) {
 					horizontal = true;
 				}
 			}
 		}
-
 		for (int i = 0; i < SIDE - 1; i++){ //checks if any moves moving up/down are possible
 			for (int j = 0; j < SIDE; j++){
 				if (board[i][j].getValue() == board[i + 1][j].getValue()){
@@ -281,24 +436,18 @@ public class MyGdxGame extends ApplicationAdapter {
 
 			}
 		}
-
-		if (vertical == true || horizontal == true || vertical == true && horizontal == true){
+		for (int i = 0; i < SIDE; i++){ //checking if there any empty tiles left in the board
+			for (int j = 0; j < SIDE; j++){
+				if (board[i][j].getValue() == 0){
+					empty = true;
+				}
+			}
+		}
+		if (vertical || horizontal|| empty){
 			return true;
 		}
-
 		else{
 			return false;
-		}
-
-	}
-
-	public void rotate(){
-		for (int i = 0; i < SIDE; i++){
-			for (int j = 0; j < SIDE; j++){
-				//board[i][j].setGridX(board[i][j].getGridY());
-				//board[i][j].setGridY(Math.abs(board[i][j].getGridX() - 3));
-				board[(SIDE-1)-j][i] = board[i][j];
-			}
 		}
 	}
 

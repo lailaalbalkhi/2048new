@@ -2,12 +2,10 @@ package com.mygdx.game;
 
 public class Tile {
 
-    private int gridX, gridY, value;
+    private int value;
     private boolean merged;
 
-    public Tile(int x, int y, int num) {
-        gridX = x;
-        gridY = y;
+    public Tile(int num) {
         value = num;
         merged = false;
     }
@@ -37,8 +35,13 @@ public class Tile {
 
     //------------------------------------------
 
-    public boolean canMerge(Tile otherTile){
-        return value == otherTile.getValue() && merged == false && otherTile.getMerged() == false;
+    public boolean canMerge(Tile otherTile) {
+        if (value == 0 || otherTile.getValue() == 0) { //if two tiles have a value of zero, we do not want them to "merge" since 2 empty tiles cannot be merged
+            return false; //therefore this condition is automatically false if the value of the tile is 0
+        }
+        else {
+            return value == otherTile.getValue() && merged == false && otherTile.getMerged() == false;
+            //otherwise, it checks
+        }
     }
-
 }
